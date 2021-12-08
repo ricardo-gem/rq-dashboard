@@ -22,6 +22,7 @@ from functools import wraps
 from math import ceil
 
 import arrow
+import rq.exceptions
 from flask import (
     Blueprint,
     current_app,
@@ -51,7 +52,6 @@ from six import string_types
 
 from .legacy_config import upgrade_config
 from .version import VERSION as rq_dashboard_version
-
 
 blueprint = Blueprint(
     "rq_dashboard", __name__, template_folder="templates", static_folder="static",
@@ -353,8 +353,11 @@ def job_view(instance_number, job_id):
 @blueprint.route("/job/<job_id>/delete", methods=["POST"])
 @jsonify
 def delete_job_view(job_id):
-    job = Job.fetch(job_id)
-    job.delete()
+    try:
+        job = Job.fetch(job_id)
+        job.delete()
+    except rq.exceptions.NoSuchJobError:
+        pass
     return dict(status="OK")
 
 
